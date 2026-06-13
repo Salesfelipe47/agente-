@@ -57,14 +57,22 @@ async function startBot() {
       if (msg.key.remoteJid.endsWith('@g.us')) continue;
 
       const phone = msg.key.remoteJid;
+      const m = msg.message;
       const text =
-        msg.message?.conversation ||
-        msg.message?.extendedTextMessage?.text ||
-        msg.message?.buttonsResponseMessage?.selectedDisplayText ||
-        msg.message?.listResponseMessage?.title ||
+        m?.conversation ||
+        m?.extendedTextMessage?.text ||
+        m?.imageMessage?.caption ||
+        m?.videoMessage?.caption ||
+        m?.buttonsResponseMessage?.selectedDisplayText ||
+        m?.listResponseMessage?.title ||
+        m?.templateButtonReplyMessage?.selectedDisplayText ||
+        m?.ephemeralMessage?.message?.conversation ||
+        m?.ephemeralMessage?.message?.extendedTextMessage?.text ||
+        m?.viewOnceMessage?.message?.conversation ||
+        m?.documentWithCaptionMessage?.message?.imageMessage?.caption ||
         '';
 
-      console.log(`[TEXT] "${text}"`);
+      console.log(`[TEXT] "${text}" keys=${Object.keys(m || {}).join(',')}}`);
       if (!text.trim()) continue;
       if (processing.has(phone)) continue;
 
