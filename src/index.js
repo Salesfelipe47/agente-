@@ -16,10 +16,11 @@ app.listen(process.env.PORT || 3000);
 const processing = new Set();
 
 // Cache: mapeia @lid JID → número real (@s.whatsapp.net)
-// Wave 1 (stub=CIPHERTEXT) chega com senderPn mas sem msg.message
-// Wave 2 (decifrada) chega com msg.message mas sem senderPn
-// Guardamos da wave 1 para usar na wave 2
 const lidPhoneCache = new Map();
+
+// Controla quais phones já receberam saudação proativa da wave 1
+// Evita dupla resposta caso a wave 2 ainda chegue depois
+const lidGreeted = new Set();
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info');
@@ -63,12 +64,28 @@ async function startBot() {
         const remoteJid = msg.key.remoteJid;
         const isLid = remoteJid.endsWith('@lid');
 
-        // Wave 1: stub=CIPHERTEXT — guarda senderPn no cache para usar depois
+        // Wave 1: stub=CIPHERTEXT — chaves Signal desatualizadas no contato
+        // Estratégia: enviar saudação proativa para o senderPn.
+        // Isso força nova troca de chaves Signal → próxima mensagem decifra corretamente.
         if (msg.messageStubType === 2 && isLid) {
           const keyJson = JSON.parse(JSON.stringify(msg.key));
-          if (keyJson.senderPn) {
-            lidPhoneCache.set(remoteJid, keyJson.senderPn);
-            console.log(`[LID_CACHE] ${remoteJid} → ${keyJson.senderPn}`);
+          const senderPhone = keyJson.senderPn;
+          if (senderPhone) {
+            lidPhoneCache.set(remoteJid, senderPhone);
+            console.log(`[LID_CACHE] ${remoteJid} → ${senderPhone}`);
+
+            if (!lidGreeted.has(senderPhone) && !processing.has(senderPhone)) {
+              lidGreeted.add(senderPhone);
+              console.log(`[SESSION_INIT] iniciando conversa com ${senderPhone}`);
+              setTimeout(async () => {
+                processing.add(senderPhone);
+                try {
+                  await handleMessage(sock, senderPhone, 'Oi');
+                } finally {
+                  processing.delete(senderPhone);
+                }
+              }, 800);
+            }
           }
           continue;
         }
@@ -83,6 +100,13 @@ async function startBot() {
           phone = keyJson.senderPn || lidPhoneCache.get(remoteJid) || remoteJid;
         } else {
           phone = remoteJid;
+        }
+
+        // Se wave 2 chegou após saudação proativa da wave 1, ignora para não duplicar
+        if (lidGreeted.has(phone)) {
+          lidGreeted.delete(phone);
+          console.log(`[WAVE2_SKIP] saudação já enviada para ${phone}, ignorando wave 2`);
+          continue;
         }
 
         const m = msg.message;
