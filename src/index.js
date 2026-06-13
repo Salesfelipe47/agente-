@@ -26,6 +26,7 @@ async function startBot() {
     logger: pino({ level: 'silent' }),
     printQRInTerminal: false,
     browser: ['Agente CNH', 'Chrome', '1.0'],
+    getMessage: async () => undefined, // ignora retry de mensagens com Bad MAC
   });
 
   sock.ev.on('creds.update', saveCreds);
