@@ -56,7 +56,10 @@ async function startBot() {
       if (msg.key.fromMe) continue;
       if (msg.key.remoteJid.endsWith('@g.us')) continue;
 
-      const phone = msg.key.remoteJid;
+      // @lid é formato interno — usa senderPn para responder
+      const phone = msg.key.remoteJid.endsWith('@lid')
+        ? (msg.key.senderPn || msg.key.remoteJid)
+        : msg.key.remoteJid;
       const m = msg.message;
       const text =
         m?.conversation ||
