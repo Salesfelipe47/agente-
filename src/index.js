@@ -70,6 +70,18 @@ async function startBot() {
     }
     if (connection === 'open') {
       console.log('✅ WhatsApp conectado! Agente CNH online.');
+      // Teste de entrega: manda mensagem para o ATENDENTE_NUMERO para confirmar se o número consegue enviar
+      if (process.env.ATENDENTE_NUMERO) {
+        const testJid = process.env.ATENDENTE_NUMERO + '@s.whatsapp.net';
+        setTimeout(async () => {
+          try {
+            const sent = await sock.sendMessage(testJid, { text: '🔧 Bot online e testando envio.' });
+            console.log(`[DELIVERY_TEST] OK → ${testJid} id=${sent?.key?.id}`);
+          } catch (e) {
+            console.error(`[DELIVERY_TEST] FALHOU → ${testJid} err=${e.message}`);
+          }
+        }, 5000); // aguarda 5s para sessão estabilizar
+      }
     }
   });
 
