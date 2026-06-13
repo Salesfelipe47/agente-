@@ -10,7 +10,7 @@ async function getAIResponse(history) {
       { role: 'system', content: SYSTEM_PROMPT },
       ...history,
     ],
-    max_tokens: 250,   // força respostas curtas e diretas
+    max_tokens: 400,
     temperature: 0.85, // mais criativo e natural, menos robótico
     top_p: 0.9,
   });

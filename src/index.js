@@ -6,6 +6,9 @@ const express = require('express');
 const { getAIResponse } = require('./groq');
 const sessions = require('./sessions');
 
+process.on('uncaughtException', (err) => console.error('[ERRO NÃO TRATADO]', err));
+process.on('unhandledRejection', (err) => console.error('[PROMISE REJEITADA]', err));
+
 const app = express();
 app.get('/', (_, res) => res.json({ status: 'online', sessions: sessions.getStats() }));
 app.listen(process.env.PORT || 3000);
