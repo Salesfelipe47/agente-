@@ -45,11 +45,13 @@ async function startBot() {
   });
 
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
+    console.log(`[EVENT] messages.upsert type=${type} count=${messages.length}`);
     if (type !== 'notify') return;
 
     for (const msg of messages) {
+      console.log(`[MSG] from=${msg.key.remoteJid} fromMe=${msg.key.fromMe}`);
       if (msg.key.fromMe) continue;
-      if (msg.key.remoteJid.endsWith('@g.us')) continue; // ignora grupos
+      if (msg.key.remoteJid.endsWith('@g.us')) continue;
 
       const phone = msg.key.remoteJid;
       const text =
@@ -59,6 +61,7 @@ async function startBot() {
         msg.message?.listResponseMessage?.title ||
         '';
 
+      console.log(`[TEXT] "${text}"`);
       if (!text.trim()) continue;
       if (processing.has(phone)) continue;
 
