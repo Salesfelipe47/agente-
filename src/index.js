@@ -173,7 +173,22 @@ async function handleMessage(sock, phone, text, sendJid = phone) {
   await sock.sendPresenceUpdate('paused', sendJid);
 
   if (cleanResponse) {
-    await sock.sendMessage(sendJid, { text: cleanResponse });
+    try {
+      const sent = await sock.sendMessage(sendJid, { text: cleanResponse });
+      console.log(`[SEND_OK] id=${sent?.key?.id} status=${sent?.status} to=${sendJid}`);
+    } catch (e) {
+      console.error(`[SEND_ERR] ${e.message} | jid=${sendJid}`);
+      // Tenta fallback com @s.whatsapp.net se o @lid falhou
+      const fallback = phoneLidCache.has(phone) ? phone : null;
+      if (fallback && sendJid !== fallback) {
+        try {
+          const sent2 = await sock.sendMessage(fallback, { text: cleanResponse });
+          console.log(`[SEND_FALLBACK_OK] id=${sent2?.key?.id} to=${fallback}`);
+        } catch (e2) {
+          console.error(`[SEND_FALLBACK_ERR] ${e2.message}`);
+        }
+      }
+    }
   }
 
   if (shouldTransfer) {
