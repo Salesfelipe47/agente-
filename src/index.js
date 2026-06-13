@@ -72,7 +72,7 @@ async function startBot() {
         m?.documentWithCaptionMessage?.message?.imageMessage?.caption ||
         '';
 
-      console.log(`[TEXT] "${text}" keys=${Object.keys(m || {}).join(',')}}`);
+      console.log(`[FULL] ${JSON.stringify(msg).substring(0, 600)}`);
       if (!text.trim()) continue;
       if (processing.has(phone)) continue;
 
