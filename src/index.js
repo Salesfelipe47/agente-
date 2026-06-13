@@ -11,9 +11,26 @@ process.on('unhandledRejection', (err) => console.error('[PROMISE]', err?.messag
 
 const app = express();
 app.get('/', (_, res) => res.json({ status: 'online', sessions: sessions.getStats() }));
+
+// Endpoint de teste: GET /test?to=5511999999999&msg=Oi
+// Usado para verificar se o número do bot consegue entregar mensagens
+app.get('/test', async (req, res) => {
+  const { to, msg } = req.query;
+  if (!to) return res.json({ error: 'Parâmetro ?to= obrigatório' });
+  const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
+  const text = msg || 'Teste de entrega - bot online ✅';
+  try {
+    const sent = await globalSock?.sendMessage(jid, { text });
+    res.json({ ok: true, jid, id: sent?.key?.id });
+  } catch (e) {
+    res.json({ ok: false, jid, error: e.message });
+  }
+});
+
 app.listen(process.env.PORT || 3000);
 
 const processing = new Set();
+let globalSock = null;
 
 // Cache: mapeia @lid JID → número real (@s.whatsapp.net)
 const lidPhoneCache = new Map();
@@ -38,6 +55,7 @@ async function startBot() {
     getMessage: async () => undefined,
   });
 
+  globalSock = sock;
   sock.ev.on('creds.update', saveCreds);
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
