@@ -49,19 +49,50 @@ async function startBot() {
   });
 
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    console.log(`[EVENT] messages.upsert type=${type} count=${messages.length}`);
-    if (type !== 'notify') return;
+    // DIAG-1: toda entrada no evento
+    console.log(`[DIAG-1] upsert | type=${type} | count=${messages.length}`);
+
+    if (type !== 'notify') {
+      console.log(`[DIAG-2] DESCARTE | type_nao_notify | type=${type}`);
+      return;
+    }
 
     for (const msg of messages) {
-      console.log(`[MSG] from=${msg.key.remoteJid} fromMe=${msg.key.fromMe}`);
-      if (msg.key.fromMe) continue;
-      if (msg.key.remoteJid.endsWith('@g.us')) continue;
+      // DIAG-3: campos individuais de cada mensagem
+      console.log([
+        `[DIAG-3] ENTRADA`,
+        `remoteJid=${msg.key?.remoteJid}`,
+        `fromMe=${msg.key?.fromMe}`,
+        `stubType=${msg.messageStubType ?? 'nenhum'}`,
+        `stubParams=${JSON.stringify(msg.messageStubParameters ?? [])}`,
+        `senderPn_direto=${msg.key?.senderPn ?? 'undefined'}`,
+        `participant=${msg.key?.participant ?? 'undefined'}`,
+        `pushName=${msg.pushName ?? 'undefined'}`,
+        `tem_message=${msg.message != null ? 'SIM' : 'NAO'}`,
+      ].join(' | '));
 
-      // @lid é formato interno — extrai senderPn via JSON para garantir acesso
+      // DIAG-4: JSON completo (800 chars) para ver campos ocultos pelo proto
+      console.log(`[DIAG-4] JSON | ${JSON.stringify(msg).substring(0, 800)}`);
+
+      if (msg.key.fromMe) {
+        console.log(`[DIAG-5] DESCARTE | fromMe=true | jid=${msg.key.remoteJid}`);
+        continue;
+      }
+
+      if (msg.key.remoteJid.endsWith('@g.us')) {
+        console.log(`[DIAG-6] DESCARTE | grupo | jid=${msg.key.remoteJid}`);
+        continue;
+      }
+
+      // ── lógica existente sem alteração ──
       const keyData = JSON.parse(JSON.stringify(msg.key));
       const phone = keyData.remoteJid?.endsWith('@lid')
         ? (keyData.senderPn || keyData.remoteJid)
         : keyData.remoteJid;
+
+      // DIAG-7: resultado da extração de phone
+      console.log(`[DIAG-7] PHONE | keyData.senderPn=${keyData.senderPn ?? 'undefined'} | resolvido=${phone}`);
+
       const m = msg.message;
       const text =
         m?.conversation ||
@@ -77,10 +108,31 @@ async function startBot() {
         m?.documentWithCaptionMessage?.message?.imageMessage?.caption ||
         '';
 
-      console.log(`[FULL] ${JSON.stringify(msg).substring(0, 600)}`);
-      if (!text.trim()) continue;
-      if (processing.has(phone)) continue;
+      // DIAG-8: qual campo originou o texto
+      const textSource = !m                                            ? 'msg.message=null'
+        : m.conversation                                               ? 'conversation'
+        : m.extendedTextMessage?.text                                  ? 'extendedTextMessage'
+        : m.imageMessage?.caption                                      ? 'imageMessage.caption'
+        : m.videoMessage?.caption                                      ? 'videoMessage.caption'
+        : m.buttonsResponseMessage?.selectedDisplayText                ? 'buttonsResponse'
+        : m.listResponseMessage?.title                                 ? 'listResponse'
+        : m.templateButtonReplyMessage?.selectedDisplayText            ? 'templateButtonReply'
+        : m.ephemeralMessage                                           ? 'ephemeralMessage'
+        : m.viewOnceMessage                                            ? 'viewOnceMessage'
+        : `NENHUM(keys=${Object.keys(m).join(',')})`;
+      console.log(`[DIAG-8] TEXTO | fonte=${textSource} | valor="${text.substring(0, 120)}"`);
 
+      if (!text.trim()) {
+        console.log(`[DIAG-9] DESCARTE | texto_vazio | stub=${msg.messageStubType ?? 'nenhum'}`);
+        continue;
+      }
+
+      if (processing.has(phone)) {
+        console.log(`[DIAG-10] DESCARTE | ja_processando | phone=${phone}`);
+        continue;
+      }
+
+      console.log(`[DIAG-11] ENVIANDO_PARA_IA | phone=${phone} | texto="${text.substring(0, 80)}"`);
       processing.add(phone);
       try {
         await handleMessage(sock, phone, text.trim());
@@ -92,7 +144,10 @@ async function startBot() {
 }
 
 async function handleMessage(sock, phone, text) {
-  if (sessions.isTransferred(phone)) return;
+  if (sessions.isTransferred(phone)) {
+    console.log(`[DIAG-12] DESCARTE | transferido | phone=${phone}`);
+    return;
+  }
 
   console.log(`[${phone}] → ${text}`);
 
@@ -105,7 +160,10 @@ async function handleMessage(sock, phone, text) {
   const session = sessions.getOrCreateSession(phone);
   const response = await getAIResponse(session.history);
 
-  if (!response) return;
+  if (!response) {
+    console.log(`[DIAG-13] DESCARTE | resposta_ia_vazia | phone=${phone}`);
+    return;
+  }
 
   const shouldTransfer = response.includes('[TRANSFERIR_ATENDENTE]');
   const cleanResponse = response.replace('[TRANSFERIR_ATENDENTE]', '').trim();
@@ -115,7 +173,9 @@ async function handleMessage(sock, phone, text) {
   await sock.sendPresenceUpdate('paused', phone);
 
   if (cleanResponse) {
+    console.log(`[DIAG-14] ENVIANDO_MSG | phone=${phone} | texto="${cleanResponse.substring(0, 80)}"`);
     await sock.sendMessage(phone, { text: cleanResponse });
+    console.log(`[DIAG-15] MSG_ENVIADA | phone=${phone}`);
   }
 
   if (shouldTransfer) {
