@@ -1,105 +1,118 @@
 require('dotenv').config();
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const qrcode = require('qrcode-terminal');
+const pino = require('pino');
 const express = require('express');
 const { getAIResponse } = require('./groq');
-const { sendText, sendTyping, transferToAttendant } = require('./evolution');
 const sessions = require('./sessions');
 
 const app = express();
-app.use(express.json());
+app.get('/', (_, res) => res.json({ status: 'online', sessions: sessions.getStats() }));
+app.listen(process.env.PORT || 3000);
 
-// Fila simples para evitar respostas duplicadas
+// Fila para evitar respostas duplicadas
 const processing = new Set();
 
-app.get('/', (req, res) => {
-  const stats = sessions.getStats();
-  res.json({ status: 'online', sessions: stats });
-});
+async function startBot() {
+  const { state, saveCreds } = await useMultiFileAuthState('auth_info');
+  const { version } = await fetchLatestBaileysVersion();
 
-app.post('/webhook', async (req, res) => {
-  res.sendStatus(200); // responde rápido pro Evolution não retentar
+  const sock = makeWASocket({
+    version,
+    auth: state,
+    logger: pino({ level: 'silent' }),
+    printQRInTerminal: false,
+    browser: ['Agente CNH', 'Chrome', '1.0'],
+  });
 
-  try {
-    const body = req.body;
+  sock.ev.on('creds.update', saveCreds);
 
-    // Filtra apenas mensagens recebidas (não enviadas pelo bot)
-    const event = body.event;
-    if (event !== 'messages.upsert') return;
-
-    const message = body.data;
-    if (!message) return;
-
-    // Ignora mensagens do próprio bot / grupos
-    if (message.key?.fromMe) return;
-    if (message.key?.remoteJid?.endsWith('@g.us')) return; // grupo
-
-    const phone = message.key.remoteJid.replace('@s.whatsapp.net', '');
-    const text =
-      message.message?.conversation ||
-      message.message?.extendedTextMessage?.text ||
-      message.message?.buttonsResponseMessage?.selectedDisplayText ||
-      message.message?.listResponseMessage?.title ||
-      '';
-
-    if (!text.trim()) return;
-
-    // Evita processar o mesmo usuário em paralelo
-    if (processing.has(phone)) return;
-    processing.add(phone);
-
-    try {
-      await handleMessage(phone, text.trim());
-    } finally {
-      processing.delete(phone);
+  sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+    if (qr) {
+      console.log('\n📱 ESCANEIE O QR CODE ABAIXO COM SEU WHATSAPP:\n');
+      qrcode.generate(qr, { small: true });
     }
-  } catch (err) {
-    console.error('[Webhook] Erro:', err.message);
-  }
-});
 
-async function handleMessage(phone, text) {
-  // Se já foi transferido para humano, ignora
+    if (connection === 'close') {
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log('Conexão fechada. Reconectando:', shouldReconnect);
+      if (shouldReconnect) setTimeout(startBot, 3000);
+    }
+
+    if (connection === 'open') {
+      console.log('✅ WhatsApp conectado! Agente CNH online.');
+    }
+  });
+
+  sock.ev.on('messages.upsert', async ({ messages, type }) => {
+    if (type !== 'notify') return;
+
+    for (const msg of messages) {
+      if (msg.key.fromMe) continue;
+      if (msg.key.remoteJid.endsWith('@g.us')) continue; // ignora grupos
+
+      const phone = msg.key.remoteJid;
+      const text =
+        msg.message?.conversation ||
+        msg.message?.extendedTextMessage?.text ||
+        msg.message?.buttonsResponseMessage?.selectedDisplayText ||
+        msg.message?.listResponseMessage?.title ||
+        '';
+
+      if (!text.trim()) continue;
+      if (processing.has(phone)) continue;
+
+      processing.add(phone);
+      try {
+        await handleMessage(sock, phone, text.trim());
+      } finally {
+        processing.delete(phone);
+      }
+    }
+  });
+}
+
+async function handleMessage(sock, phone, text) {
   if (sessions.isTransferred(phone)) return;
 
-  console.log(`[${phone}] →`, text);
+  console.log(`[${phone}] → ${text}`);
 
-  // Adiciona mensagem do usuário ao histórico
   sessions.addMessage(phone, 'user', text);
 
-  // Simula digitação
-  await sendTyping(phone, 1200);
+  // Simula digitando
+  await sock.sendPresenceUpdate('composing', phone);
+  await new Promise(r => setTimeout(r, 1500));
 
-  // Pega resposta da IA
   const session = sessions.getOrCreateSession(phone);
   const response = await getAIResponse(session.history);
 
-  if (!response) {
-    await sendText(phone, 'Desculpe, tive um problema. Pode repetir? 😊');
-    return;
-  }
+  if (!response) return;
 
-  // Verifica se a IA decidiu transferir
   const shouldTransfer = response.includes('[TRANSFERIR_ATENDENTE]');
   const cleanResponse = response.replace('[TRANSFERIR_ATENDENTE]', '').trim();
 
-  // Adiciona resposta da IA ao histórico
   sessions.addMessage(phone, 'assistant', cleanResponse);
 
-  // Envia resposta
+  await sock.sendPresenceUpdate('paused', phone);
+
   if (cleanResponse) {
-    await sendText(phone, cleanResponse);
+    await sock.sendMessage(phone, { text: cleanResponse });
   }
 
-  // Transfere se necessário
   if (shouldTransfer) {
     sessions.markTransferred(phone);
-    await transferToAttendant(phone);
+    await sock.sendMessage(phone, {
+      text: '📲 *Transferindo para atendente...*\n\nUm especialista vai te atender agora! ⏳'
+    });
+
+    const atendente = process.env.ATENDENTE_NUMERO + '@s.whatsapp.net';
+    const phoneClean = phone.replace('@s.whatsapp.net', '');
+    await sock.sendMessage(atendente, {
+      text: `🔔 *Novo lead!*\nCliente +${phoneClean} quer fechar CNH.\nAtenda agora! 🚗`
+    });
   }
 
-  console.log(`[${phone}] ←`, cleanResponse.substring(0, 80));
+  console.log(`[${phone}] ← ${cleanResponse.substring(0, 80)}`);
 }
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚗 Agente CNH rodando na porta ${PORT}`);
-  console.log(`📡 Webhook: POST /webhook`);
-});
+startBot();

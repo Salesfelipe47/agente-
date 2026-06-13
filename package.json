@@ -1,16 +1,16 @@
 {
   "name": "agente-cnh",
   "version": "1.0.0",
-  "description": "Agente IA para Auto Escola via WhatsApp",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "start": "node src/index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "axios": "^1.6.0",
+    "@whiskeysockets/baileys": "^6.7.9",
     "groq-sdk": "^0.3.0",
-    "dotenv": "^16.3.1"
+    "qrcode-terminal": "^0.12.0",
+    "dotenv": "^16.3.1",
+    "pino": "^8.17.0",
+    "express": "^4.18.2"
   }
 }
