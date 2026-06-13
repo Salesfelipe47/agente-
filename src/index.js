@@ -18,8 +18,11 @@ const processing = new Set();
 // Cache: mapeia @lid JID → número real (@s.whatsapp.net)
 const lidPhoneCache = new Map();
 
+// Cache inverso: senderPn (@s.whatsapp.net) → @lid JID (para envio)
+// sendMessage precisa do @lid, não do @s.whatsapp.net
+const phoneLidCache = new Map();
+
 // Controla quais phones já receberam saudação proativa da wave 1
-// Evita dupla resposta caso a wave 2 ainda chegue depois
 const lidGreeted = new Set();
 
 async function startBot() {
@@ -72,15 +75,17 @@ async function startBot() {
           const senderPhone = keyJson.senderPn;
           if (senderPhone) {
             lidPhoneCache.set(remoteJid, senderPhone);
+            phoneLidCache.set(senderPhone, remoteJid);
             console.log(`[LID_CACHE] ${remoteJid} → ${senderPhone}`);
 
             if (!lidGreeted.has(senderPhone) && !processing.has(senderPhone)) {
               lidGreeted.add(senderPhone);
-              console.log(`[SESSION_INIT] iniciando conversa com ${senderPhone}`);
+              const sendJid = remoteJid; // usa @lid para envio
+              console.log(`[SESSION_INIT] enviando para ${sendJid} (sessão: ${senderPhone})`);
               setTimeout(async () => {
                 processing.add(senderPhone);
                 try {
-                  await handleMessage(sock, senderPhone, 'Oi');
+                  await handleMessage(sock, senderPhone, 'Oi', sendJid);
                 } finally {
                   processing.delete(senderPhone);
                 }
@@ -130,7 +135,9 @@ async function startBot() {
 
         processing.add(phone);
         try {
-          await handleMessage(sock, phone, text.trim());
+          // Se o contato tem @lid, usa ele para envio; senão usa o próprio phone
+          const sendJid = phoneLidCache.get(phone) || phone;
+          await handleMessage(sock, phone, text.trim(), sendJid);
         } finally {
           processing.delete(phone);
         }
@@ -141,14 +148,16 @@ async function startBot() {
   });
 }
 
-async function handleMessage(sock, phone, text) {
+// phone = chave de sessão (senderPn ou remoteJid)
+// sendJid = JID real para envio (preferencialmente @lid se disponível)
+async function handleMessage(sock, phone, text, sendJid = phone) {
   if (sessions.isTransferred(phone)) return;
 
-  console.log(`[${phone}] → ${text}`);
+  console.log(`[${phone}] → ${text} (send via ${sendJid})`);
 
   sessions.addMessage(phone, 'user', text);
 
-  await sock.sendPresenceUpdate('composing', phone);
+  await sock.sendPresenceUpdate('composing', sendJid);
   await new Promise(r => setTimeout(r, 1500));
 
   const session = sessions.getOrCreateSession(phone);
@@ -161,20 +170,20 @@ async function handleMessage(sock, phone, text) {
 
   sessions.addMessage(phone, 'assistant', cleanResponse);
 
-  await sock.sendPresenceUpdate('paused', phone);
+  await sock.sendPresenceUpdate('paused', sendJid);
 
   if (cleanResponse) {
-    await sock.sendMessage(phone, { text: cleanResponse });
+    await sock.sendMessage(sendJid, { text: cleanResponse });
   }
 
   if (shouldTransfer) {
     sessions.markTransferred(phone);
-    await sock.sendMessage(phone, {
+    await sock.sendMessage(sendJid, {
       text: '📲 *Transferindo para atendente...*\n\nUm especialista vai te atender agora! ⏳'
     });
 
     const atendente = process.env.ATENDENTE_NUMERO + '@s.whatsapp.net';
-    const phoneClean = phone.replace('@s.whatsapp.net', '');
+    const phoneClean = phone.replace('@s.whatsapp.net', '').replace('@lid', '');
     await sock.sendMessage(atendente, {
       text: `🔔 *Novo lead!*\nCliente +${phoneClean} quer fechar CNH.\nAtenda agora! 🚗`
     });
