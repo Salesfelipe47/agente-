@@ -135,6 +135,8 @@ body{background:#0d1117;color:#e6edf3;height:100vh;display:flex;flex-direction:c
 <div class="notif" id="notif"></div>
 
 <script>
+const API = 'https://agente-production-fa01.up.railway.app';
+
 const STAGES = {
   gancho: 'Gancho',
   qualificacao: 'Qualificação',
@@ -163,7 +165,7 @@ let conversations = {};
 let searchTerm = '';
 
 // SSE
-const evtSource = new EventSource('/api/events');
+const evtSource = new EventSource(`${API}/api/events`);
 evtSource.onopen = () => {
   document.getElementById('status-badge').textContent = 'Online';
   document.getElementById('status-badge').style.background = '#238636';
@@ -187,7 +189,7 @@ evtSource.onmessage = (e) => {
 
 // Load initial conversations
 async function loadConvs() {
-  const r = await fetch('/api/conversations');
+  const r = await fetch(`${API}/api/conversations`);
   const list = await r.json();
   list.forEach(c => { conversations[c.phone] = c; });
   renderSidebar();
@@ -277,7 +279,7 @@ async function openConv(phone) {
   renderSidebar();
 
   // Load messages
-  const r = await fetch(`/api/conversations/${encodeURIComponent(phone)}`);
+  const r = await fetch(`${API}/api/conversations/${encodeURIComponent(phone)}`);
   const data = await r.json();
   conversations[phone] = { ...conversations[phone], ...data };
 
@@ -345,7 +347,7 @@ function scrollToBottom() {
 }
 
 async function markRead(phone) {
-  await fetch(`/api/conversations/${encodeURIComponent(phone)}/read`, { method: 'POST' });
+  await fetch(`${API}/api/conversations/${encodeURIComponent(phone)}/read`, { method: 'POST' });
   if (conversations[phone]) conversations[phone].unread = 0;
   renderSidebar();
   updateStats();
@@ -353,7 +355,7 @@ async function markRead(phone) {
 
 async function changeStage(stage) {
   if (!currentPhone) return;
-  await fetch(`/api/conversations/${encodeURIComponent(currentPhone)}/stage`, {
+  await fetch(`${API}/api/conversations/${encodeURIComponent(currentPhone)}/stage`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ stage })
@@ -387,7 +389,7 @@ async function sendMsg() {
   autoResize(input);
 
   try {
-    const r = await fetch('/api/send', {
+    const r = await fetch(`${API}/api/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to: currentPhone, text })

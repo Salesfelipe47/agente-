@@ -11,6 +11,13 @@ process.on('unhandledRejection', (err) => console.error('[PROMISE]', err?.messag
 
 const app = express();
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 
 // Painel de atendimento
 app.get('/panel', (_, res) => res.sendFile(path.join(__dirname, 'panel.html')));
