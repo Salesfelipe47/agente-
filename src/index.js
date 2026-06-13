@@ -6,15 +6,20 @@ const express = require('express');
 const { getAIResponse } = require('./groq');
 const sessions = require('./sessions');
 
-process.on('uncaughtException', (err) => console.error('[ERRO NÃO TRATADO]', err));
-process.on('unhandledRejection', (err) => console.error('[PROMISE REJEITADA]', err));
+process.on('uncaughtException', (err) => console.error('[ERRO]', err.message));
+process.on('unhandledRejection', (err) => console.error('[PROMISE]', err?.message || err));
 
 const app = express();
 app.get('/', (_, res) => res.json({ status: 'online', sessions: sessions.getStats() }));
 app.listen(process.env.PORT || 3000);
 
-// Fila para evitar respostas duplicadas
 const processing = new Set();
+
+// Cache: mapeia @lid JID → número real (@s.whatsapp.net)
+// Wave 1 (stub=CIPHERTEXT) chega com senderPn mas sem msg.message
+// Wave 2 (decifrada) chega com msg.message mas sem senderPn
+// Guardamos da wave 1 para usar na wave 2
+const lidPhoneCache = new Map();
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info');
@@ -26,7 +31,7 @@ async function startBot() {
     logger: pino({ level: 'silent' }),
     printQRInTerminal: false,
     browser: ['Agente CNH', 'Chrome', '1.0'],
-    getMessage: async () => undefined, // ignora retry de mensagens com Bad MAC
+    getMessage: async () => undefined,
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -36,62 +41,47 @@ async function startBot() {
       console.log('\n📱 ESCANEIE O QR CODE ABAIXO COM SEU WHATSAPP:\n');
       qrcode.generate(qr, { small: true });
     }
-
     if (connection === 'close') {
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
       console.log('Conexão fechada. Reconectando:', shouldReconnect);
       if (shouldReconnect) setTimeout(startBot, 3000);
     }
-
     if (connection === 'open') {
       console.log('✅ WhatsApp conectado! Agente CNH online.');
     }
   });
 
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    // DIAG-1: toda entrada no evento
-    console.log(`[DIAG-1] upsert | type=${type} | count=${messages.length}`);
-
-    if (type !== 'notify') {
-      console.log(`[DIAG-2] DESCARTE | type_nao_notify | type=${type}`);
-      return;
-    }
+    if (type !== 'notify') return;
 
     for (const msg of messages) {
-      // DIAG-3: campos individuais de cada mensagem
-      console.log([
-        `[DIAG-3] ENTRADA`,
-        `remoteJid=${msg.key?.remoteJid}`,
-        `fromMe=${msg.key?.fromMe}`,
-        `stubType=${msg.messageStubType ?? 'nenhum'}`,
-        `stubParams=${JSON.stringify(msg.messageStubParameters ?? [])}`,
-        `senderPn_direto=${msg.key?.senderPn ?? 'undefined'}`,
-        `participant=${msg.key?.participant ?? 'undefined'}`,
-        `pushName=${msg.pushName ?? 'undefined'}`,
-        `tem_message=${msg.message != null ? 'SIM' : 'NAO'}`,
-      ].join(' | '));
+      if (msg.key.fromMe) continue;
+      if (msg.key.remoteJid.endsWith('@g.us')) continue;
 
-      // DIAG-4: JSON completo (800 chars) para ver campos ocultos pelo proto
-      console.log(`[DIAG-4] JSON | ${JSON.stringify(msg).substring(0, 800)}`);
+      const remoteJid = msg.key.remoteJid;
+      const isLid = remoteJid.endsWith('@lid');
 
-      if (msg.key.fromMe) {
-        console.log(`[DIAG-5] DESCARTE | fromMe=true | jid=${msg.key.remoteJid}`);
-        continue;
+      // Wave 1: stub=CIPHERTEXT — guarda senderPn no cache para usar depois
+      if (msg.messageStubType === 2 && isLid) {
+        const keyJson = JSON.parse(JSON.stringify(msg.key));
+        if (keyJson.senderPn) {
+          lidPhoneCache.set(remoteJid, keyJson.senderPn);
+          console.log(`[LID_CACHE] ${remoteJid} → ${keyJson.senderPn}`);
+        }
+        continue; // mensagem não decifrada ainda, aguarda wave 2
       }
 
-      if (msg.key.remoteJid.endsWith('@g.us')) {
-        console.log(`[DIAG-6] DESCARTE | grupo | jid=${msg.key.remoteJid}`);
-        continue;
+      // Descarta outros stubs (grupos, revoke, etc)
+      if (msg.messageStubType) continue;
+
+      // Resolve phone: @lid usa cache ou senderPn direto
+      let phone;
+      if (isLid) {
+        const keyJson = JSON.parse(JSON.stringify(msg.key));
+        phone = keyJson.senderPn || lidPhoneCache.get(remoteJid) || remoteJid;
+      } else {
+        phone = remoteJid;
       }
-
-      // ── lógica existente sem alteração ──
-      const keyData = JSON.parse(JSON.stringify(msg.key));
-      const phone = keyData.remoteJid?.endsWith('@lid')
-        ? (keyData.senderPn || keyData.remoteJid)
-        : keyData.remoteJid;
-
-      // DIAG-7: resultado da extração de phone
-      console.log(`[DIAG-7] PHONE | keyData.senderPn=${keyData.senderPn ?? 'undefined'} | resolvido=${phone}`);
 
       const m = msg.message;
       const text =
@@ -108,31 +98,9 @@ async function startBot() {
         m?.documentWithCaptionMessage?.message?.imageMessage?.caption ||
         '';
 
-      // DIAG-8: qual campo originou o texto
-      const textSource = !m                                            ? 'msg.message=null'
-        : m.conversation                                               ? 'conversation'
-        : m.extendedTextMessage?.text                                  ? 'extendedTextMessage'
-        : m.imageMessage?.caption                                      ? 'imageMessage.caption'
-        : m.videoMessage?.caption                                      ? 'videoMessage.caption'
-        : m.buttonsResponseMessage?.selectedDisplayText                ? 'buttonsResponse'
-        : m.listResponseMessage?.title                                 ? 'listResponse'
-        : m.templateButtonReplyMessage?.selectedDisplayText            ? 'templateButtonReply'
-        : m.ephemeralMessage                                           ? 'ephemeralMessage'
-        : m.viewOnceMessage                                            ? 'viewOnceMessage'
-        : `NENHUM(keys=${Object.keys(m).join(',')})`;
-      console.log(`[DIAG-8] TEXTO | fonte=${textSource} | valor="${text.substring(0, 120)}"`);
+      if (!text.trim()) continue;
+      if (processing.has(phone)) continue;
 
-      if (!text.trim()) {
-        console.log(`[DIAG-9] DESCARTE | texto_vazio | stub=${msg.messageStubType ?? 'nenhum'}`);
-        continue;
-      }
-
-      if (processing.has(phone)) {
-        console.log(`[DIAG-10] DESCARTE | ja_processando | phone=${phone}`);
-        continue;
-      }
-
-      console.log(`[DIAG-11] ENVIANDO_PARA_IA | phone=${phone} | texto="${text.substring(0, 80)}"`);
       processing.add(phone);
       try {
         await handleMessage(sock, phone, text.trim());
@@ -144,26 +112,19 @@ async function startBot() {
 }
 
 async function handleMessage(sock, phone, text) {
-  if (sessions.isTransferred(phone)) {
-    console.log(`[DIAG-12] DESCARTE | transferido | phone=${phone}`);
-    return;
-  }
+  if (sessions.isTransferred(phone)) return;
 
   console.log(`[${phone}] → ${text}`);
 
   sessions.addMessage(phone, 'user', text);
 
-  // Simula digitando
   await sock.sendPresenceUpdate('composing', phone);
   await new Promise(r => setTimeout(r, 1500));
 
   const session = sessions.getOrCreateSession(phone);
   const response = await getAIResponse(session.history);
 
-  if (!response) {
-    console.log(`[DIAG-13] DESCARTE | resposta_ia_vazia | phone=${phone}`);
-    return;
-  }
+  if (!response) return;
 
   const shouldTransfer = response.includes('[TRANSFERIR_ATENDENTE]');
   const cleanResponse = response.replace('[TRANSFERIR_ATENDENTE]', '').trim();
@@ -173,9 +134,7 @@ async function handleMessage(sock, phone, text) {
   await sock.sendPresenceUpdate('paused', phone);
 
   if (cleanResponse) {
-    console.log(`[DIAG-14] ENVIANDO_MSG | phone=${phone} | texto="${cleanResponse.substring(0, 80)}"`);
     await sock.sendMessage(phone, { text: cleanResponse });
-    console.log(`[DIAG-15] MSG_ENVIADA | phone=${phone}`);
   }
 
   if (shouldTransfer) {
