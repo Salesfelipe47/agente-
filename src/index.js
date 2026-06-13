@@ -52,60 +52,66 @@ async function startBot() {
   });
 
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
+    console.log(`[MSG_EVENT] type=${type} count=${messages.length}`);
     if (type !== 'notify') return;
 
     for (const msg of messages) {
-      if (msg.key.fromMe) continue;
-      if (msg.key.remoteJid.endsWith('@g.us')) continue;
-
-      const remoteJid = msg.key.remoteJid;
-      const isLid = remoteJid.endsWith('@lid');
-
-      // Wave 1: stub=CIPHERTEXT — guarda senderPn no cache para usar depois
-      if (msg.messageStubType === 2 && isLid) {
-        const keyJson = JSON.parse(JSON.stringify(msg.key));
-        if (keyJson.senderPn) {
-          lidPhoneCache.set(remoteJid, keyJson.senderPn);
-          console.log(`[LID_CACHE] ${remoteJid} → ${keyJson.senderPn}`);
-        }
-        continue; // mensagem não decifrada ainda, aguarda wave 2
-      }
-
-      // Descarta outros stubs (grupos, revoke, etc)
-      if (msg.messageStubType) continue;
-
-      // Resolve phone: @lid usa cache ou senderPn direto
-      let phone;
-      if (isLid) {
-        const keyJson = JSON.parse(JSON.stringify(msg.key));
-        phone = keyJson.senderPn || lidPhoneCache.get(remoteJid) || remoteJid;
-      } else {
-        phone = remoteJid;
-      }
-
-      const m = msg.message;
-      const text =
-        m?.conversation ||
-        m?.extendedTextMessage?.text ||
-        m?.imageMessage?.caption ||
-        m?.videoMessage?.caption ||
-        m?.buttonsResponseMessage?.selectedDisplayText ||
-        m?.listResponseMessage?.title ||
-        m?.templateButtonReplyMessage?.selectedDisplayText ||
-        m?.ephemeralMessage?.message?.conversation ||
-        m?.ephemeralMessage?.message?.extendedTextMessage?.text ||
-        m?.viewOnceMessage?.message?.conversation ||
-        m?.documentWithCaptionMessage?.message?.imageMessage?.caption ||
-        '';
-
-      if (!text.trim()) continue;
-      if (processing.has(phone)) continue;
-
-      processing.add(phone);
       try {
-        await handleMessage(sock, phone, text.trim());
-      } finally {
-        processing.delete(phone);
+        if (msg.key.fromMe) continue;
+        if (msg.key.remoteJid.endsWith('@g.us')) continue;
+
+        const remoteJid = msg.key.remoteJid;
+        const isLid = remoteJid.endsWith('@lid');
+
+        // Wave 1: stub=CIPHERTEXT — guarda senderPn no cache para usar depois
+        if (msg.messageStubType === 2 && isLid) {
+          const keyJson = JSON.parse(JSON.stringify(msg.key));
+          if (keyJson.senderPn) {
+            lidPhoneCache.set(remoteJid, keyJson.senderPn);
+            console.log(`[LID_CACHE] ${remoteJid} → ${keyJson.senderPn}`);
+          }
+          continue;
+        }
+
+        // Descarta outros stubs
+        if (msg.messageStubType) continue;
+
+        // Resolve phone: @lid usa cache ou senderPn direto
+        let phone;
+        if (isLid) {
+          const keyJson = JSON.parse(JSON.stringify(msg.key));
+          phone = keyJson.senderPn || lidPhoneCache.get(remoteJid) || remoteJid;
+        } else {
+          phone = remoteJid;
+        }
+
+        const m = msg.message;
+        const text =
+          m?.conversation ||
+          m?.extendedTextMessage?.text ||
+          m?.imageMessage?.caption ||
+          m?.videoMessage?.caption ||
+          m?.buttonsResponseMessage?.selectedDisplayText ||
+          m?.listResponseMessage?.title ||
+          m?.templateButtonReplyMessage?.selectedDisplayText ||
+          m?.ephemeralMessage?.message?.conversation ||
+          m?.ephemeralMessage?.message?.extendedTextMessage?.text ||
+          m?.viewOnceMessage?.message?.conversation ||
+          m?.documentWithCaptionMessage?.message?.imageMessage?.caption ||
+          '';
+
+        console.log(`[MSG_IN] phone=${phone} text="${text.substring(0, 60)}"`);
+        if (!text.trim()) continue;
+        if (processing.has(phone)) continue;
+
+        processing.add(phone);
+        try {
+          await handleMessage(sock, phone, text.trim());
+        } finally {
+          processing.delete(phone);
+        }
+      } catch (err) {
+        console.error(`[MSG_ERR] ${err.message}`);
       }
     }
   });
