@@ -57,10 +57,11 @@ async function startBot() {
       if (msg.key.fromMe) continue;
       if (msg.key.remoteJid.endsWith('@g.us')) continue;
 
-      // @lid é formato interno — usa senderPn para responder
-      const phone = msg.key.remoteJid.endsWith('@lid')
-        ? (msg.key.senderPn || msg.key.remoteJid)
-        : msg.key.remoteJid;
+      // @lid é formato interno — extrai senderPn via JSON para garantir acesso
+      const keyData = JSON.parse(JSON.stringify(msg.key));
+      const phone = keyData.remoteJid?.endsWith('@lid')
+        ? (keyData.senderPn || keyData.remoteJid)
+        : keyData.remoteJid;
       const m = msg.message;
       const text =
         m?.conversation ||
