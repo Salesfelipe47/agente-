@@ -89,6 +89,76 @@ app.post('/api/send', async (req, res) => {
   }
 });
 
+// ── AGENTE CONVERSÃO: analytics do funil ──────────────────────────────────
+app.get('/api/analytics', (_, res) => {
+  const convs = store.listConvs();
+  const stages = store.STAGES;
+  const stageCounts = {};
+  stages.forEach(s => stageCounts[s] = 0);
+  convs.forEach(c => { if (stageCounts[c.stage] !== undefined) stageCounts[c.stage]++; });
+
+  const totalLeads = convs.length;
+  const fechados = stageCounts['fechado'] || 0;
+  const atendentes = stageCounts['atendente'] || 0;
+
+  // Tempo médio (simulado por agora — evoluir com timestamps por etapa)
+  res.json({
+    totalLeads,
+    fechados,
+    atendentes,
+    taxaConversao: totalLeads ? ((fechados / totalLeads) * 100).toFixed(1) : '0.0',
+    stageCounts,
+    stages,
+  });
+});
+
+// ── AGENTE FLUXOS: scripts por etapa ──────────────────────────────────────
+const fluxosData = {
+  gancho:       'Ei! Você sabia que dá pra ter CNH em mãos em menos de 48h? 🚗\nComo você chegou até a gente?',
+  qualificacao: 'Posso te fazer uma pergunta rápida?\nVocê precisa da CNH mais pra trabalho ou uso pessoal?',
+  espelho_dor:  'Entendo... Quanto você gasta por mês em Uber/moto-táxi?\nImagina esse dinheiro no seu bolso todo mês.',
+  revelacao:    'Aqui a gente resolve isso pra você do zero.\nSem prova, sem aula — você não precisa fazer nada. Quer saber como funciona?',
+  beneficios:   'Tudo incluso: toxicológico, exames, zero burocracia.\nJá fizemos mais de 200 CNHs esse mês. Entrega em até 48h.',
+  escassez:     'Essa semana temos só *3 vagas* com prazo de 48h.\nOntem fecharam 4. Você quer garantir a sua hoje?',
+  categoria:    'Qual categoria você precisa?\n👉 Só moto (A) · Só carro (B) · Carro+Moto (AB) ← mais vendida',
+  valor:        'O valor depende da categoria. A mais procurada é a AB: *R$ 2.000* parcelado.\nDá menos de R$ 7/dia — menos que um café no trabalho ☕',
+  atendente:    'Perfeito! Vou te passar pra um especialista finalizar.\nEnquanto isso, me manda: CPF, RG ou CNH (foto), selfie e comprovante de residência 📄',
+  fechado:      '✅ Matrícula confirmada! Bem-vindo(a) à Auto Escola Brasileira.\nEm breve entraremos em contato com os próximos passos.',
+};
+
+app.get('/api/fluxos', (_, res) => res.json(fluxosData));
+app.put('/api/fluxos/:stage', (req, res) => {
+  const { stage } = req.params;
+  const { script } = req.body;
+  if (fluxosData[stage] !== undefined) fluxosData[stage] = script;
+  res.json({ ok: true });
+});
+
+// ── AGENTE MENSAGENS: sugestão de resposta via IA ─────────────────────────
+const { getAIResponse } = require('./groq');
+app.post('/api/suggest', async (req, res) => {
+  const { clienteMsg, stage } = req.body;
+  if (!clienteMsg) return res.json({ ok: false, error: 'clienteMsg obrigatório' });
+
+  const stageLabel = {
+    gancho:'Gancho',qualificacao:'Qualificação',espelho_dor:'Espelho da Dor',
+    revelacao:'Revelação',beneficios:'Benefícios',escassez:'Escassez',
+    categoria:'Categoria',valor:'Valor',atendente:'Atendente',fechado:'Fechado'
+  }[stage] || stage || 'desconhecida';
+
+  try {
+    const history = [
+      { role: 'user', content: `O cliente está na etapa "${stageLabel}" e disse: "${clienteMsg}"\n\nGere 3 opções de resposta curtas (máx 3 linhas cada), numeradas 1., 2., 3. Use o estilo do LUCAS: humano, direto, persuasivo. Responda APENAS as 3 opções, sem explicações.` }
+    ];
+    const response = await getAIResponse(history);
+    // Divide as 3 opções
+    const options = response.split(/\n(?=\d\.)/).map(s => s.replace(/^\d\.\s*/, '').trim()).filter(Boolean).slice(0, 3);
+    res.json({ ok: true, options });
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
 // Teste de entrega
 app.get('/test', async (req, res) => {
   const { to, msg } = req.query;

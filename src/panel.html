@@ -2,132 +2,250 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Auto Escola Brasileira — Painel</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
 body{background:#0d1117;color:#e6edf3;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-/* HEADER */
-.header{background:#161b22;border-bottom:1px solid #30363d;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0}
-.header h1{font-size:16px;font-weight:600;color:#58a6ff}
-.header .badge{background:#238636;color:#fff;font-size:11px;padding:2px 8px;border-radius:12px}
-.header .stats{margin-left:auto;display:flex;gap:16px;font-size:12px;color:#8b949e}
-.header .stats span b{color:#e6edf3}
+/* TOPBAR */
+.topbar{background:#161b22;border-bottom:1px solid #30363d;padding:0 20px;display:flex;align-items:center;gap:0;flex-shrink:0;height:48px}
+.topbar-brand{display:flex;align-items:center;gap:10px;margin-right:24px}
+.topbar-brand h1{font-size:14px;font-weight:600;color:#58a6ff;white-space:nowrap}
+.topbar-brand .dot{width:8px;height:8px;border-radius:50%;background:#238636}
+.tabs{display:flex;height:100%}
+.tab{padding:0 18px;height:100%;display:flex;align-items:center;gap:7px;cursor:pointer;color:#8b949e;font-size:13px;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab:hover{color:#e6edf3;background:#1c2128}
+.tab.active{color:#58a6ff;border-bottom-color:#58a6ff;background:#0d1117}
+.tab .icon{font-size:15px}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:12px;color:#8b949e}
+.topbar-right b{color:#e6edf3}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;margin-right:4px}
+.status-dot.online{background:#238636}
 
-/* LAYOUT */
-.layout{display:flex;flex:1;overflow:hidden}
+/* PAGES */
+.page{display:none;flex:1;overflow:hidden}
+.page.active{display:flex}
 
-/* SIDEBAR */
-.sidebar{width:320px;background:#161b22;border-right:1px solid #30363d;display:flex;flex-direction:column;flex-shrink:0}
-.sidebar-header{padding:12px 16px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:8px}
-.sidebar-header input{flex:1;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:6px 10px;color:#e6edf3;font-size:13px;outline:none}
-.sidebar-header input:focus{border-color:#58a6ff}
+/* ══════════════════════════════════════════
+   ABA 1 — ATENDIMENTO
+══════════════════════════════════════════ */
+.atend-layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:300px;background:#161b22;border-right:1px solid #30363d;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-search{padding:10px 12px;border-bottom:1px solid #30363d}
+.sidebar-search input{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 10px;color:#e6edf3;font-size:12px;outline:none}
+.sidebar-search input:focus{border-color:#58a6ff}
 .conv-list{flex:1;overflow-y:auto}
-.conv-list::-webkit-scrollbar{width:4px}
-.conv-list::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
-
-.conv-item{padding:12px 16px;border-bottom:1px solid #21262d;cursor:pointer;display:flex;gap:10px;align-items:flex-start;transition:background .15s}
+.conv-list::-webkit-scrollbar{width:3px}
+.conv-list::-webkit-scrollbar-thumb{background:#30363d}
+.conv-item{padding:10px 12px;border-bottom:1px solid #21262d;cursor:pointer;display:flex;gap:9px;transition:background .12s}
 .conv-item:hover{background:#1c2128}
 .conv-item.active{background:#1f2937;border-left:3px solid #58a6ff}
-.conv-avatar{width:40px;height:40px;border-radius:50%;background:#21262d;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.conv-info{flex:1;min-width:0}
-.conv-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
-.conv-phone{font-size:13px;font-weight:600;color:#e6edf3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
-.conv-time{font-size:11px;color:#8b949e;flex-shrink:0}
-.conv-bottom{display:flex;justify-content:space-between;align-items:center}
-.conv-preview{font-size:12px;color:#8b949e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
-.conv-unread{background:#238636;color:#fff;font-size:11px;padding:1px 6px;border-radius:10px;flex-shrink:0}
-.conv-stage-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.conv-av{width:38px;height:38px;border-radius:50%;background:#21262d;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.conv-meta{flex:1;min-width:0}
+.conv-row1{display:flex;justify-content:space-between;margin-bottom:2px}
+.conv-phone{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.conv-ts{font-size:10px;color:#8b949e}
+.conv-row2{display:flex;justify-content:space-between;align-items:center}
+.conv-prev{font-size:11px;color:#8b949e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+.conv-badges{display:flex;gap:3px;align-items:center;flex-shrink:0}
+.badge-unread{background:#238636;color:#fff;font-size:10px;padding:1px 5px;border-radius:8px}
+.stage-dot{width:7px;height:7px;border-radius:50%}
 
-/* STAGE COLORS */
-.stage-gancho{background:#6366f1}
-.stage-qualificacao{background:#8b5cf6}
-.stage-espelho_dor{background:#ec4899}
-.stage-revelacao{background:#f59e0b}
-.stage-beneficios{background:#10b981}
-.stage-escassez{background:#ef4444}
-.stage-categoria{background:#3b82f6}
-.stage-valor{background:#f97316}
-.stage-atendente{background:#22c55e}
-.stage-fechado{background:#8b949e}
-
-/* MAIN */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#0d1117}
-.main-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#8b949e}
-.main-empty .icon{font-size:48px}
-
-/* CHAT HEADER */
-.chat-header{background:#161b22;border-bottom:1px solid #30363d;padding:12px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.chat-avatar{width:36px;height:36px;border-radius:50%;background:#21262d;display:flex;align-items:center;justify-content:center;font-size:16px}
-.chat-info{flex:1}
-.chat-phone{font-size:14px;font-weight:600}
-.chat-jid{font-size:11px;color:#8b949e}
-.stage-selector{background:#21262d;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:12px;padding:4px 8px;outline:none;cursor:pointer}
-
-/* MESSAGES */
-.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
-.messages::-webkit-scrollbar{width:4px}
-.messages::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
-
-.msg-wrap{display:flex;flex-direction:column;max-width:68%}
-.msg-wrap.from-me{align-self:flex-end;align-items:flex-end}
-.msg-wrap.from-them{align-self:flex-start;align-items:flex-start}
-
-.msg-bubble{padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5;word-break:break-word;white-space:pre-wrap}
-.from-me .msg-bubble{background:#005c4b;color:#e9edef;border-bottom-right-radius:2px}
-.from-them .msg-bubble{background:#1f2937;color:#e6edf3;border-bottom-left-radius:2px}
-
-.msg-time{font-size:10px;color:#8b949e;margin-top:2px;padding:0 4px}
-
-/* INPUT */
-.input-area{background:#161b22;border-top:1px solid #30363d;padding:12px 16px;display:flex;gap:10px;align-items:flex-end;flex-shrink:0}
-.msg-input{flex:1;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:10px 14px;color:#e6edf3;font-size:13px;resize:none;max-height:120px;outline:none;line-height:1.5;font-family:inherit}
-.msg-input:focus{border-color:#58a6ff}
-.msg-input::placeholder{color:#8b949e}
-.send-btn{background:#238636;border:none;border-radius:8px;padding:10px 16px;color:#fff;font-size:13px;cursor:pointer;flex-shrink:0;transition:background .15s;height:40px}
+/* CHAT */
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chat-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#8b949e}
+.chat-empty .big{font-size:40px}
+.chat-hdr{background:#161b22;border-bottom:1px solid #30363d;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.chat-hdr-av{width:34px;height:34px;border-radius:50%;background:#21262d;display:flex;align-items:center;justify-content:center}
+.chat-hdr-info{flex:1}
+.chat-hdr-phone{font-size:13px;font-weight:600}
+.chat-hdr-sub{font-size:10px;color:#8b949e}
+.stage-sel{background:#21262d;border:1px solid #30363d;border-radius:5px;color:#e6edf3;font-size:11px;padding:3px 7px;outline:none;cursor:pointer}
+.messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:6px}
+.messages::-webkit-scrollbar{width:3px}
+.messages::-webkit-scrollbar-thumb{background:#30363d}
+.mwrap{display:flex;flex-direction:column;max-width:65%}
+.mwrap.me{align-self:flex-end;align-items:flex-end}
+.mwrap.them{align-self:flex-start}
+.mbubble{padding:7px 11px;border-radius:9px;font-size:12px;line-height:1.5;word-break:break-word;white-space:pre-wrap}
+.me .mbubble{background:#005c4b;border-bottom-right-radius:2px}
+.them .mbubble{background:#1f2937;border-bottom-left-radius:2px}
+.mts{font-size:10px;color:#8b949e;margin-top:1px;padding:0 3px}
+.quick-row{padding:6px 12px;background:#161b22;border-top:1px solid #21262d;display:flex;gap:5px;flex-wrap:wrap;flex-shrink:0}
+.qbtn{background:#21262d;border:1px solid #30363d;border-radius:5px;color:#8b949e;font-size:10px;padding:3px 9px;cursor:pointer;transition:all .12s}
+.qbtn:hover{background:#1f2937;color:#e6edf3;border-color:#58a6ff}
+.input-row{background:#161b22;border-top:1px solid #30363d;padding:10px 12px;display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+.msg-inp{flex:1;background:#21262d;border:1px solid #30363d;border-radius:7px;padding:8px 12px;color:#e6edf3;font-size:12px;resize:none;max-height:100px;outline:none;line-height:1.5;font-family:inherit}
+.msg-inp:focus{border-color:#58a6ff}
+.send-btn{background:#238636;border:none;border-radius:7px;padding:8px 14px;color:#fff;font-size:12px;cursor:pointer;height:36px;flex-shrink:0}
 .send-btn:hover{background:#2ea043}
 .send-btn:disabled{background:#21262d;color:#8b949e;cursor:not-allowed}
 
-/* QUICK REPLIES */
-.quick-replies{padding:8px 16px;background:#161b22;border-top:1px solid #21262d;display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
-.qr-btn{background:#21262d;border:1px solid #30363d;border-radius:6px;color:#8b949e;font-size:11px;padding:4px 10px;cursor:pointer;transition:all .15s;white-space:nowrap}
-.qr-btn:hover{background:#1f2937;color:#e6edf3;border-color:#58a6ff}
+/* ══════════════════════════════════════════
+   ABA 2 — FLUXOS
+══════════════════════════════════════════ */
+.fluxos-layout{flex:1;display:flex;overflow:hidden}
+.fluxos-stages{width:220px;background:#161b22;border-right:1px solid #30363d;overflow-y:auto;padding:12px 0}
+.fstage-item{padding:9px 16px;cursor:pointer;display:flex;align-items:center;gap:9px;font-size:12px;color:#8b949e;transition:all .12s}
+.fstage-item:hover{background:#1c2128;color:#e6edf3}
+.fstage-item.active{background:#1f2937;color:#58a6ff;border-left:2px solid #58a6ff}
+.fstage-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;color:#fff}
+.fluxos-editor{flex:1;display:flex;flex-direction:column;padding:24px;gap:16px;overflow-y:auto}
+.fluxos-editor h2{font-size:15px;font-weight:600;color:#e6edf3}
+.fluxos-editor .stage-desc{font-size:12px;color:#8b949e;margin-top:2px}
+.script-area{width:100%;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px;color:#e6edf3;font-size:13px;line-height:1.6;min-height:160px;resize:vertical;outline:none;font-family:inherit}
+.script-area:focus{border-color:#58a6ff}
+.fluxos-actions{display:flex;gap:10px}
+.btn-primary{background:#238636;border:none;border-radius:6px;padding:8px 16px;color:#fff;font-size:12px;cursor:pointer}
+.btn-primary:hover{background:#2ea043}
+.btn-secondary{background:#21262d;border:1px solid #30363d;border-radius:6px;padding:8px 16px;color:#e6edf3;font-size:12px;cursor:pointer}
+.btn-secondary:hover{background:#1c2128}
+.preview-box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px}
+.preview-box h4{font-size:11px;color:#8b949e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.wamsg{background:#005c4b;border-radius:8px;border-bottom-left-radius:2px;padding:8px 12px;font-size:12px;line-height:1.5;white-space:pre-wrap;max-width:400px;word-break:break-word}
 
-/* FUNNEL STAGES LABEL */
-.stage-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:3px 8px;border-radius:12px;background:#21262d;color:#e6edf3}
+/* ══════════════════════════════════════════
+   ABA 3 — CONVERSÃO
+══════════════════════════════════════════ */
+.conv-layout{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:20px}
+.kpi-row{display:flex;gap:14px;flex-wrap:wrap}
+.kpi{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;flex:1;min-width:140px}
+.kpi .val{font-size:28px;font-weight:700;color:#58a6ff;margin-bottom:2px}
+.kpi .lbl{font-size:11px;color:#8b949e}
+.kpi.green .val{color:#238636}
+.kpi.orange .val{color:#f59e0b}
+.kpi.red .val{color:#ef4444}
+.section-title{font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:12px}
+.funnel-wrap{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px}
+.funnel-stage{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.funnel-stage .fname{font-size:12px;color:#8b949e;width:110px;flex-shrink:0}
+.funnel-bar-wrap{flex:1;background:#21262d;border-radius:4px;height:20px;overflow:hidden}
+.funnel-bar{height:100%;border-radius:4px;transition:width .6s;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff;font-weight:600}
+.funnel-count{font-size:11px;color:#8b949e;width:30px;text-align:right;flex-shrink:0}
+
+/* ══════════════════════════════════════════
+   ABA 4 — MENSAGENS
+══════════════════════════════════════════ */
+.msgs-layout{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:20px;max-width:800px;width:100%;margin:0 auto}
+.msgs-layout h2{font-size:15px;font-weight:600}
+.suggest-form{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.suggest-form label{font-size:12px;color:#8b949e}
+.suggest-form select,.suggest-form textarea{background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:13px;padding:9px 12px;outline:none;width:100%;font-family:inherit}
+.suggest-form select:focus,.suggest-form textarea:focus{border-color:#58a6ff}
+.suggest-form textarea{resize:vertical;min-height:80px}
+.suggest-results{display:flex;flex-direction:column;gap:10px}
+.suggest-card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.suggest-card .opt-text{font-size:13px;line-height:1.5;white-space:pre-wrap}
+.suggest-card .opt-actions{display:flex;gap:8px}
+.opt-copy{background:#21262d;border:1px solid #30363d;border-radius:5px;color:#8b949e;font-size:11px;padding:4px 10px;cursor:pointer}
+.opt-copy:hover{color:#e6edf3;border-color:#58a6ff}
+.opt-send{background:#238636;border:none;border-radius:5px;color:#fff;font-size:11px;padding:4px 10px;cursor:pointer}
+.opt-send:hover{background:#2ea043}
+.opt-send:disabled{background:#21262d;color:#8b949e;cursor:not-allowed}
+.loading-spin{display:inline-block;width:14px;height:14px;border:2px solid #30363d;border-top-color:#58a6ff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.templates-section{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px}
+.template-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
+.tmpl-card{background:#0d1117;border:1px solid #30363d;border-radius:7px;padding:12px;cursor:pointer;transition:border-color .12s}
+.tmpl-card:hover{border-color:#58a6ff}
+.tmpl-card .tlabel{font-size:10px;color:#8b949e;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.tmpl-card .ttext{font-size:12px;line-height:1.4;color:#e6edf3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+
+/* STAGE COLORS */
+.sc-gancho{background:#6366f1}.sc-qualificacao{background:#8b5cf6}.sc-espelho_dor{background:#ec4899}
+.sc-revelacao{background:#f59e0b}.sc-beneficios{background:#10b981}.sc-escassez{background:#ef4444}
+.sc-categoria{background:#3b82f6}.sc-valor{background:#f97316}.sc-atendente{background:#22c55e}.sc-fechado{background:#8b949e}
 
 /* NOTIF */
-.notif{position:fixed;top:16px;right:16px;background:#238636;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;transform:translateY(-80px);transition:transform .3s;z-index:100}
+.notif{position:fixed;bottom:20px;right:20px;background:#161b22;border:1px solid #238636;color:#e6edf3;padding:10px 16px;border-radius:8px;font-size:12px;transform:translateY(80px);transition:transform .3s;z-index:100;max-width:300px}
 .notif.show{transform:translateY(0)}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div>🚗</div>
-  <h1>Auto Escola Brasileira</h1>
-  <span class="badge" id="status-badge">Conectando...</span>
-  <div class="stats">
-    <span>Conversas: <b id="stat-total">0</b></span>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div>🚗</div>
+    <h1>Auto Escola Brasileira</h1>
+    <div class="dot" id="status-dot"></div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('atendimento',this)"><span class="icon">💬</span> Atendimento</div>
+    <div class="tab" onclick="switchTab('fluxos',this)"><span class="icon">🔄</span> Fluxos</div>
+    <div class="tab" onclick="switchTab('conversao',this)"><span class="icon">📊</span> Conversão</div>
+    <div class="tab" onclick="switchTab('mensagens',this)"><span class="icon">🤖</span> Mensagens IA</div>
+  </div>
+  <div class="topbar-right">
+    <span>Leads: <b id="stat-total">0</b></span>
     <span>Não lidas: <b id="stat-unread">0</b></span>
+    <span><span class="status-dot" id="sdot"></span><span id="status-lbl">Conectando...</span></span>
   </div>
 </div>
 
-<div class="layout">
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <input type="text" id="search" placeholder="Buscar número...">
+<!-- ABA 1: ATENDIMENTO -->
+<div class="page active" id="page-atendimento">
+  <div class="atend-layout">
+    <div class="sidebar">
+      <div class="sidebar-search"><input id="search" placeholder="Buscar número..." oninput="renderSidebar()"></div>
+      <div class="conv-list" id="conv-list"></div>
     </div>
-    <div class="conv-list" id="conv-list"></div>
+    <div class="chat-area" id="chat-area">
+      <div class="chat-empty"><div class="big">💬</div><div>Selecione uma conversa</div></div>
+    </div>
   </div>
+</div>
 
-  <!-- MAIN -->
-  <div class="main" id="main">
-    <div class="main-empty">
-      <div class="icon">💬</div>
-      <div>Selecione uma conversa para atender</div>
+<!-- ABA 2: FLUXOS -->
+<div class="page" id="page-fluxos">
+  <div class="fluxos-layout">
+    <div class="fluxos-stages" id="fluxos-stages"></div>
+    <div class="fluxos-editor" id="fluxos-editor">
+      <div style="color:#8b949e;font-size:13px">Selecione uma etapa para editar o script</div>
+    </div>
+  </div>
+</div>
+
+<!-- ABA 3: CONVERSÃO -->
+<div class="page" id="page-conversao">
+  <div class="conv-layout" id="conv-layout">
+    <div style="color:#8b949e">Carregando analytics...</div>
+  </div>
+</div>
+
+<!-- ABA 4: MENSAGENS IA -->
+<div class="page" id="page-mensagens">
+  <div class="msgs-layout">
+    <h2>🤖 Agente Mensagens — Sugestões de Resposta</h2>
+    <div class="suggest-form">
+      <div>
+        <label>Etapa atual do cliente</label>
+        <select id="suggest-stage" style="margin-top:6px">
+          <option value="gancho">Gancho</option>
+          <option value="qualificacao">Qualificação</option>
+          <option value="espelho_dor">Espelho da Dor</option>
+          <option value="revelacao">Revelação</option>
+          <option value="beneficios">Benefícios</option>
+          <option value="escassez">Escassez</option>
+          <option value="categoria">Categoria</option>
+          <option value="valor">Valor</option>
+          <option value="atendente">Atendente</option>
+        </select>
+      </div>
+      <div>
+        <label>O que o cliente disse?</label>
+        <textarea id="suggest-input" style="margin-top:6px" placeholder="Ex: tá caro, vou pensar..." rows="3"></textarea>
+      </div>
+      <div>
+        <button class="btn-primary" onclick="getSuggestions()" id="suggest-btn">✨ Gerar 3 Sugestões</button>
+      </div>
+    </div>
+    <div class="suggest-results" id="suggest-results"></div>
+    <div class="templates-section">
+      <div class="section-title">📋 Respostas Rápidas Salvas</div>
+      <div class="template-grid" id="template-grid"></div>
     </div>
   </div>
 </div>
@@ -137,136 +255,119 @@ body{background:#0d1117;color:#e6edf3;height:100vh;display:flex;flex-direction:c
 <script>
 const API = 'https://agente-production-fa01.up.railway.app';
 
-const STAGES = {
-  gancho: 'Gancho',
-  qualificacao: 'Qualificação',
-  espelho_dor: 'Espelho da Dor',
-  revelacao: 'Revelação',
-  beneficios: 'Benefícios',
-  escassez: 'Escassez',
-  categoria: 'Categoria',
-  valor: 'Valor',
-  atendente: 'Atendente',
-  fechado: 'Fechado'
-};
+const STAGE_LABELS = {gancho:'Gancho',qualificacao:'Qualificação',espelho_dor:'Espelho da Dor',revelacao:'Revelação',beneficios:'Benefícios',escassez:'Escassez',categoria:'Categoria',valor:'Valor',atendente:'Atendente',fechado:'Fechado'};
+const STAGE_COLORS = {gancho:'#6366f1',qualificacao:'#8b5cf6',espelho_dor:'#ec4899',revelacao:'#f59e0b',beneficios:'#10b981',escassez:'#ef4444',categoria:'#3b82f6',valor:'#f97316',atendente:'#22c55e',fechado:'#8b949e'};
+const STAGES_ORDER = ['gancho','qualificacao','espelho_dor','revelacao','beneficios','escassez','categoria','valor','atendente','fechado'];
+const STAGE_NUMS = ['1','2','3','4','5','6','7','8','9','✓'];
 
-const QUICK = [
-  { label: 'Oi 👋', text: 'Oi! Antes de qualquer coisa — você tem CNH atualmente ou tá começando do zero?' },
-  { label: 'Categoria', text: 'Você pretende usar mais pra trabalho ou uso pessoal?' },
-  { label: 'AB ⭐', text: 'A nossa mais procurada é a *Categoria AB* — você já dirige carro ou só precisa da moto mesmo?' },
-  { label: 'Vagas', text: 'Olha, essa semana a gente tem só *3 vagas* disponíveis com o prazo de 48h. Você quer garantir a sua?' },
-  { label: 'PIX/Boleto', text: 'Pode parcelar sim! Entrada + parcelas via PIX ou boleto. *Sem cartão, sem burocracia.*' },
-  { label: 'Docs 📋', text: 'Perfeito! Pra confirmar sua vaga preciso só de:\n📄 CPF\n🪪 RG ou CNH (foto)\n🤳 Selfie\n🏠 Comprovante de residência' },
-  { label: '48h ⚡', text: 'Com tudo em dia, sua CNH fica pronta em *até 48 horas*. Você consegue os documentos hoje?' },
+const QUICK_REPLIES = [
+  {l:'👋 Oi',t:'Oi! Você sabia que dá pra ter CNH em mãos em menos de 48h? 🚗\nComo você chegou até a gente?'},
+  {l:'❓ Qualificação',t:'Posso te fazer uma pergunta rápida?\nVocê precisa da CNH mais pra trabalho ou uso pessoal?'},
+  {l:'⭐ AB',t:'A nossa mais procurada é a *Categoria AB* — carro + moto por R$ 2.000 parcelado.\nMenos de R$ 7/dia. Tem interesse?'},
+  {l:'⚡ Vagas',t:'Essa semana temos só *3 vagas* com prazo de 48h.\nOntem fecharam 4. Você quer garantir a sua hoje?'},
+  {l:'💳 PIX/Boleto',t:'Pode parcelar sim! Entrada + parcelas via PIX ou boleto.\n*Sem cartão, sem burocracia.*'},
+  {l:'📄 Docs',t:'Perfeito! Preciso só de:\n📄 CPF\n🪪 RG ou CNH (foto)\n🤳 Selfie\n🏠 Comprovante de residência'},
+  {l:'⏰ 48h',t:'Com tudo em dia, sua CNH fica pronta em *até 48 horas*.\nVocê consegue os documentos hoje?'},
 ];
 
+// ── ESTADO ────────────────────────────────────────────────────────────────
 let currentPhone = null;
 let conversations = {};
-let searchTerm = '';
+let currentTab = 'atendimento';
+let fluxosScripts = {};
+let currentFluxosStage = null;
 
-// SSE
+// ── SSE ───────────────────────────────────────────────────────────────────
 const evtSource = new EventSource(`${API}/api/events`);
-evtSource.onopen = () => {
-  document.getElementById('status-badge').textContent = 'Online';
-  document.getElementById('status-badge').style.background = '#238636';
-};
-evtSource.onerror = () => {
-  document.getElementById('status-badge').textContent = 'Reconectando...';
-  document.getElementById('status-badge').style.background = '#b08800';
-};
+evtSource.onopen = () => setStatus(true);
+evtSource.onerror = () => setStatus(false);
 evtSource.onmessage = (e) => {
   const data = JSON.parse(e.data);
-  if (data.type === 'message') {
-    onNewMessage(data.phone, data.msg);
-  } else if (data.type === 'conv_update') {
-    updateConvSummary(data.conv);
-  } else if (data.type === 'stage') {
-    if (conversations[data.phone]) conversations[data.phone].stage = data.stage;
-    renderSidebar();
-    if (currentPhone === data.phone) renderChatHeader();
-  }
+  if (data.type === 'message') onNewMsg(data.phone, data.msg);
+  else if (data.type === 'conv_update') onConvUpdate(data.conv);
+  else if (data.type === 'stage') { if (conversations[data.phone]) conversations[data.phone].stage = data.stage; renderSidebar(); }
 };
 
-// Load initial conversations
-async function loadConvs() {
+function setStatus(online) {
+  document.getElementById('sdot').className = 'status-dot' + (online?' online':'');
+  document.getElementById('status-lbl').textContent = online ? 'Online' : 'Reconectando...';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+async function init() {
   const r = await fetch(`${API}/api/conversations`);
   const list = await r.json();
   list.forEach(c => { conversations[c.phone] = c; });
   renderSidebar();
   updateStats();
+  loadFluxos();
+  renderTemplates();
 }
 
-function updateConvSummary(conv) {
-  conversations[conv.phone] = { ...conversations[conv.phone], ...conv };
+// ── TABS ──────────────────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('page-'+tab).classList.add('active');
+  currentTab = tab;
+  if (tab === 'conversao') loadAnalytics();
+}
+
+// ── ATENDIMENTO ───────────────────────────────────────────────────────────
+function onConvUpdate(conv) {
+  conversations[conv.phone] = {...conversations[conv.phone], ...conv};
   renderSidebar();
   updateStats();
   if (conv.unread > 0 && conv.phone !== currentPhone) showNotif(conv.phone, conv.lastText);
 }
 
-function onNewMessage(phone, msg) {
-  if (!conversations[phone]) conversations[phone] = { phone, stage: 'gancho', messages: [], unread: 0, lastText: '', lastTime: Date.now() };
+function onNewMsg(phone, msg) {
+  if (!conversations[phone]) conversations[phone] = {phone, stage:'gancho', messages:[], unread:0, lastText:'', lastTime:Date.now()};
   if (!conversations[phone].messages) conversations[phone].messages = [];
   conversations[phone].messages.push(msg);
-  if (currentPhone === phone) {
-    appendMessage(msg);
-    scrollToBottom();
-    markRead(phone);
-  }
-}
-
-function showNotif(phone, text) {
-  const n = document.getElementById('notif');
-  n.textContent = `📩 ${formatPhone(phone)}: ${text?.substring(0, 40) || '...'}`;
-  n.classList.add('show');
-  setTimeout(() => n.classList.remove('show'), 3000);
+  if (currentPhone === phone) { appendMsg(msg); scrollBottom(); markRead(phone); }
 }
 
 function updateStats() {
-  const total = Object.keys(conversations).length;
-  const unread = Object.values(conversations).reduce((a, c) => a + (c.unread || 0), 0);
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-unread').textContent = unread;
+  document.getElementById('stat-total').textContent = Object.keys(conversations).length;
+  document.getElementById('stat-unread').textContent = Object.values(conversations).reduce((a,c) => a+(c.unread||0),0);
 }
 
-function formatPhone(phone) {
-  const p = phone.replace('@s.whatsapp.net','').replace('@lid','');
-  if (p.startsWith('55') && p.length >= 12) {
-    const ddd = p.slice(2, 4);
-    const num = p.slice(4);
-    return `+55 (${ddd}) ${num.slice(0, num.length > 8 ? 5 : 4)}-${num.slice(num.length > 8 ? 5 : 4)}`;
+function fmtPhone(p) {
+  const n = p.replace('@s.whatsapp.net','').replace('@lid','');
+  if (n.startsWith('55') && n.length >= 12) {
+    const ddd = n.slice(2,4), num = n.slice(4);
+    return `+55 (${ddd}) ${num.length>8?num.slice(0,5)+'-'+num.slice(5):num.slice(0,4)+'-'+num.slice(4)}`;
   }
-  return '+' + p;
+  return '+'+n;
 }
 
-function timeStr(ts) {
-  const d = new Date(ts);
-  const now = new Date();
-  if (d.toDateString() === now.toDateString()) {
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  }
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+function fmtTime(ts) {
+  const d = new Date(ts), now = new Date();
+  if (d.toDateString()===now.toDateString()) return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
 }
 
 function renderSidebar() {
-  const search = searchTerm.toLowerCase();
+  const term = document.getElementById('search')?.value?.toLowerCase() || '';
   const list = Object.values(conversations)
-    .filter(c => !search || c.phone.includes(search))
-    .sort((a, b) => (b.lastTime || 0) - (a.lastTime || 0));
+    .filter(c => !term || c.phone.includes(term))
+    .sort((a,b) => (b.lastTime||0)-(a.lastTime||0));
 
-  const el = document.getElementById('conv-list');
-  el.innerHTML = list.map(c => `
-    <div class="conv-item ${c.phone === currentPhone ? 'active' : ''}" onclick="openConv('${c.phone}')">
-      <div class="conv-avatar">👤</div>
-      <div class="conv-info">
-        <div class="conv-top">
-          <span class="conv-phone">${formatPhone(c.phone)}</span>
-          <span class="conv-time">${timeStr(c.lastTime || Date.now())}</span>
+  document.getElementById('conv-list').innerHTML = list.map(c => `
+    <div class="conv-item ${c.phone===currentPhone?'active':''}" onclick="openConv('${c.phone}')">
+      <div class="conv-av">👤</div>
+      <div class="conv-meta">
+        <div class="conv-row1">
+          <span class="conv-phone">${fmtPhone(c.phone)}</span>
+          <span class="conv-ts">${fmtTime(c.lastTime||Date.now())}</span>
         </div>
-        <div class="conv-bottom">
-          <span class="conv-preview">${c.lastText || 'Sem mensagens'}</span>
-          <div style="display:flex;gap:4px;align-items:center">
-            <div class="conv-stage-dot stage-${c.stage}"></div>
-            ${c.unread ? `<span class="conv-unread">${c.unread}</span>` : ''}
+        <div class="conv-row2">
+          <span class="conv-prev">${esc(c.lastText||'Sem mensagens')}</span>
+          <div class="conv-badges">
+            <div class="stage-dot sc-${c.stage}" title="${STAGE_LABELS[c.stage]||c.stage}"></div>
+            ${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}
           </div>
         </div>
       </div>
@@ -277,12 +378,9 @@ function renderSidebar() {
 async function openConv(phone) {
   currentPhone = phone;
   renderSidebar();
-
-  // Load messages
   const r = await fetch(`${API}/api/conversations/${encodeURIComponent(phone)}`);
   const data = await r.json();
-  conversations[phone] = { ...conversations[phone], ...data };
-
+  conversations[phone] = {...conversations[phone],...data};
   markRead(phone);
   updateStats();
   renderChat();
@@ -291,129 +389,257 @@ async function openConv(phone) {
 function renderChat() {
   const conv = conversations[currentPhone];
   if (!conv) return;
-
-  document.getElementById('main').innerHTML = `
-    <div class="chat-header">
-      <div class="chat-avatar">👤</div>
-      <div class="chat-info">
-        <div class="chat-phone">${formatPhone(currentPhone)}</div>
-        <div class="chat-jid">${currentPhone}</div>
+  document.getElementById('chat-area').innerHTML = `
+    <div class="chat-hdr">
+      <div class="chat-hdr-av">👤</div>
+      <div class="chat-hdr-info">
+        <div class="chat-hdr-phone">${fmtPhone(currentPhone)}</div>
+        <div class="chat-hdr-sub">${currentPhone}</div>
       </div>
-      <select class="stage-selector" onchange="changeStage(this.value)" id="stage-select">
-        ${Object.entries(STAGES).map(([k,v]) => `<option value="${k}" ${conv.stage===k?'selected':''}>${v}</option>`).join('')}
+      <select class="stage-sel" onchange="changeStage(this.value)" id="stage-sel">
+        ${STAGES_ORDER.map(s=>`<option value="${s}" ${conv.stage===s?'selected':''}>${STAGE_LABELS[s]}</option>`).join('')}
       </select>
     </div>
-    <div class="messages" id="messages">
-      ${(conv.messages || []).map(msgHTML).join('')}
-    </div>
-    <div class="quick-replies">
-      ${QUICK.map(q => `<button class="qr-btn" onclick="useQuick(${JSON.stringify(q.text).replace(/'/g,"\\'")})">${q.label}</button>`).join('')}
-    </div>
-    <div class="input-area">
-      <textarea class="msg-input" id="msg-input" placeholder="Digite uma mensagem..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <div class="messages" id="messages">${(conv.messages||[]).map(msgHTML).join('')}</div>
+    <div class="quick-row">${QUICK_REPLIES.map(q=>`<button class="qbtn" onclick="useQuick(${JSON.stringify(q.t)})">${q.l}</button>`).join('')}</div>
+    <div class="input-row">
+      <textarea class="msg-inp" id="msg-inp" placeholder="Mensagem..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-btn" onclick="sendMsg()">Enviar</button>
     </div>
   `;
-
-  scrollToBottom();
-  document.getElementById('msg-input').focus();
-}
-
-function renderChatHeader() {
-  const conv = conversations[currentPhone];
-  if (!conv) return;
-  const sel = document.getElementById('stage-select');
-  if (sel) sel.value = conv.stage;
+  scrollBottom();
+  document.getElementById('msg-inp').focus();
 }
 
 function msgHTML(msg) {
-  return `
-    <div class="msg-wrap ${msg.fromMe ? 'from-me' : 'from-them'}">
-      <div class="msg-bubble">${escapeHtml(msg.text)}</div>
-      <div class="msg-time">${timeStr(msg.time)}</div>
-    </div>
-  `;
+  return `<div class="mwrap ${msg.fromMe?'me':'them'}">
+    <div class="mbubble">${esc(msg.text)}</div>
+    <div class="mts">${fmtTime(msg.time)}</div>
+  </div>`;
 }
 
-function appendMessage(msg) {
+function appendMsg(msg) {
   const el = document.getElementById('messages');
-  if (!el) return;
-  el.insertAdjacentHTML('beforeend', msgHTML(msg));
+  if (el) el.insertAdjacentHTML('beforeend', msgHTML(msg));
 }
 
-function scrollToBottom() {
+function scrollBottom() {
   const el = document.getElementById('messages');
   if (el) el.scrollTop = el.scrollHeight;
 }
 
 async function markRead(phone) {
-  await fetch(`${API}/api/conversations/${encodeURIComponent(phone)}/read`, { method: 'POST' });
+  await fetch(`${API}/api/conversations/${encodeURIComponent(phone)}/read`,{method:'POST'});
   if (conversations[phone]) conversations[phone].unread = 0;
-  renderSidebar();
-  updateStats();
+  renderSidebar(); updateStats();
 }
 
 async function changeStage(stage) {
   if (!currentPhone) return;
-  await fetch(`${API}/api/conversations/${encodeURIComponent(currentPhone)}/stage`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ stage })
-  });
+  await fetch(`${API}/api/conversations/${encodeURIComponent(currentPhone)}/stage`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({stage})});
   if (conversations[currentPhone]) conversations[currentPhone].stage = stage;
   renderSidebar();
 }
 
 function useQuick(text) {
-  const input = document.getElementById('msg-input');
-  if (input) { input.value = text; autoResize(input); input.focus(); }
+  const el = document.getElementById('msg-inp');
+  if (el) { el.value = text; autoResize(el); el.focus(); }
 }
 
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
-}
-
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
+function handleKey(e) { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
 
 async function sendMsg() {
-  const input = document.getElementById('msg-input');
+  const input = document.getElementById('msg-inp');
   const text = input?.value?.trim();
   if (!text || !currentPhone) return;
-
   const btn = document.querySelector('.send-btn');
-  btn.disabled = true;
-  input.value = '';
-  autoResize(input);
-
+  if (btn) btn.disabled = true;
+  input.value = ''; autoResize(input);
   try {
-    const r = await fetch(`${API}/api/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: currentPhone, text })
-    });
-    const result = await r.json();
-    if (!result.ok) alert('Erro ao enviar: ' + result.error);
-  } catch(e) {
-    alert('Erro de conexão');
+    await fetch(`${API}/api/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:currentPhone,text})});
   } finally {
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
     input.focus();
   }
 }
 
-function escapeHtml(str) {
-  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ── FLUXOS ────────────────────────────────────────────────────────────────
+async function loadFluxos() {
+  const r = await fetch(`${API}/api/fluxos`);
+  fluxosScripts = await r.json();
+  renderFluxosSidebar();
 }
 
-document.getElementById('search').addEventListener('input', function() {
-  searchTerm = this.value;
-  renderSidebar();
-});
+function renderFluxosSidebar() {
+  document.getElementById('fluxos-stages').innerHTML = STAGES_ORDER.map((s,i)=>`
+    <div class="fstage-item ${s===currentFluxosStage?'active':''}" onclick="openFluxosStage('${s}')">
+      <div class="fstage-num" style="background:${STAGE_COLORS[s]}">${STAGE_NUMS[i]}</div>
+      <span>${STAGE_LABELS[s]}</span>
+    </div>
+  `).join('');
+}
 
-loadConvs();
+const STAGE_DESCS = {
+  gancho:'Primeiro contato — gera curiosidade sem revelar o produto diretamente',
+  qualificacao:'Identifica se é para trabalho ou uso pessoal — define o perfil',
+  espelho_dor:'Aponta o problema que o cliente tem SEM a CNH — faz sentir a perda',
+  revelacao:'Revela que existe solução — sem falar preço ainda',
+  beneficios:'Lista o que está incluso + prova social de clientes anteriores',
+  escassez:'Cria urgência real com número de vagas disponíveis',
+  categoria:'Cliente escolhe qual categoria precisa',
+  valor:'Revela o preço + reframe (parcelado = valor diário pequeno)',
+  atendente:'Pede documentos e transfere para atendente humano fechar',
+  fechado:'Confirmação da matrícula realizada',
+};
+
+function openFluxosStage(stage) {
+  currentFluxosStage = stage;
+  renderFluxosSidebar();
+  const script = fluxosScripts[stage] || '';
+  document.getElementById('fluxos-editor').innerHTML = `
+    <div>
+      <h2><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${STAGE_COLORS[stage]};margin-right:8px"></span>${STAGE_LABELS[stage]}</h2>
+      <div class="stage-desc">${STAGE_DESCS[stage]||''}</div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:#8b949e;margin-bottom:6px">Script / mensagem desta etapa</div>
+      <textarea class="script-area" id="script-area" oninput="updatePreview()">${esc(script)}</textarea>
+    </div>
+    <div class="fluxos-actions">
+      <button class="btn-primary" onclick="saveFluxo('${stage}')">💾 Salvar</button>
+      <button class="btn-secondary" onclick="copyScript()">📋 Copiar</button>
+    </div>
+    <div class="preview-box">
+      <h4>Preview — como vai aparecer no WhatsApp</h4>
+      <div class="wamsg" id="preview-msg">${fmtWA(script)}</div>
+    </div>
+  `;
+}
+
+function updatePreview() {
+  const el = document.getElementById('preview-msg');
+  const val = document.getElementById('script-area')?.value || '';
+  if (el) el.innerHTML = fmtWA(val);
+}
+
+function fmtWA(text) {
+  return esc(text)
+    .replace(/\*(.*?)\*/g,'<b>$1</b>')
+    .replace(/_(.*?)_/g,'<i>$1</i>')
+    .replace(/\n/g,'<br>');
+}
+
+async function saveFluxo(stage) {
+  const script = document.getElementById('script-area')?.value || '';
+  fluxosScripts[stage] = script;
+  await fetch(`${API}/api/fluxos/${stage}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({script})});
+  showNotif('',`Script "${STAGE_LABELS[stage]}" salvo ✅`);
+}
+
+function copyScript() {
+  const val = document.getElementById('script-area')?.value || '';
+  navigator.clipboard.writeText(val).then(()=>showNotif('','Copiado! 📋'));
+}
+
+// ── CONVERSÃO ─────────────────────────────────────────────────────────────
+async function loadAnalytics() {
+  const r = await fetch(`${API}/api/analytics`);
+  const d = await r.json();
+  const maxCount = Math.max(...Object.values(d.stageCounts), 1);
+
+  document.getElementById('conv-layout').innerHTML = `
+    <div class="section-title">📊 Visão Geral</div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="val">${d.totalLeads}</div><div class="lbl">Total de Leads</div></div>
+      <div class="kpi green"><div class="val">${d.fechados}</div><div class="lbl">Matrículas Fechadas</div></div>
+      <div class="kpi orange"><div class="val">${d.taxaConversao}%</div><div class="lbl">Taxa de Conversão</div></div>
+      <div class="kpi"><div class="val">${d.atendentes}</div><div class="lbl">Em Atendimento</div></div>
+    </div>
+    <div class="funnel-wrap">
+      <div class="section-title">🔽 Funil de Vendas</div>
+      ${STAGES_ORDER.map(s => {
+        const count = d.stageCounts[s] || 0;
+        const pct = maxCount > 0 ? (count/maxCount*100).toFixed(0) : 0;
+        return `<div class="funnel-stage">
+          <div class="fname">${STAGE_LABELS[s]}</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:${pct}%;background:${STAGE_COLORS[s]}">${count>0?count:''}</div>
+          </div>
+          <div class="funnel-count">${count}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:11px;color:#8b949e">* Dados em memória — reiniciados a cada deploy. Em breve: persistência em banco de dados.</div>
+  `;
+}
+
+// ── MENSAGENS IA ──────────────────────────────────────────────────────────
+async function getSuggestions() {
+  const clienteMsg = document.getElementById('suggest-input')?.value?.trim();
+  const stage = document.getElementById('suggest-stage')?.value;
+  if (!clienteMsg) return;
+
+  const btn = document.getElementById('suggest-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spin"></span> Gerando...';
+  document.getElementById('suggest-results').innerHTML = '';
+
+  try {
+    const r = await fetch(`${API}/api/suggest`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clienteMsg,stage})});
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+
+    document.getElementById('suggest-results').innerHTML = data.options.map((opt,i) => `
+      <div class="suggest-card">
+        <div style="font-size:10px;color:#8b949e;margin-bottom:4px">Opção ${i+1}</div>
+        <div class="opt-text">${esc(opt)}</div>
+        <div class="opt-actions">
+          <button class="opt-copy" onclick="navigator.clipboard.writeText(${JSON.stringify(opt)}).then(()=>showNotif('','Copiado! 📋'))">📋 Copiar</button>
+          ${currentPhone ? `<button class="opt-send" onclick="sendSuggestion(${JSON.stringify(opt)},this)">📤 Enviar para conversa aberta</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    document.getElementById('suggest-results').innerHTML = `<div style="color:#ef4444;font-size:12px">Erro: ${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✨ Gerar 3 Sugestões';
+  }
+}
+
+async function sendSuggestion(text, btn) {
+  if (!currentPhone) return;
+  btn.disabled = true;
+  await fetch(`${API}/api/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:currentPhone,text})});
+  btn.textContent = '✅ Enviado!';
+}
+
+function renderTemplates() {
+  document.getElementById('template-grid').innerHTML = QUICK_REPLIES.map(q => `
+    <div class="tmpl-card" onclick="useTemplate(${JSON.stringify(q.t)})">
+      <div class="tlabel">${q.l}</div>
+      <div class="ttext">${esc(q.t)}</div>
+    </div>
+  `).join('');
+}
+
+function useTemplate(text) {
+  document.getElementById('suggest-input').value = '';
+  navigator.clipboard.writeText(text).then(()=>showNotif('','Template copiado! 📋'));
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function showNotif(phone, text) {
+  const n = document.getElementById('notif');
+  n.textContent = phone ? `📩 ${fmtPhone(phone)}: ${text?.substring(0,40)||'...'}` : text;
+  n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),3000);
+}
+
+init();
 </script>
 </body>
 </html>
