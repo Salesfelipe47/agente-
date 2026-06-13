@@ -78,8 +78,7 @@ async function startBot() {
             phoneLidCache.set(senderPhone, remoteJid);
             console.log(`[LID_CACHE] ${remoteJid} → ${senderPhone}`);
 
-            if (!lidGreeted.has(senderPhone) && !processing.has(senderPhone)) {
-              lidGreeted.add(senderPhone);
+            if (!processing.has(senderPhone)) {
               const sendJid = remoteJid; // usa @lid para envio
               console.log(`[SESSION_INIT] enviando para ${sendJid} (sessão: ${senderPhone})`);
               setTimeout(async () => {
@@ -107,12 +106,6 @@ async function startBot() {
           phone = remoteJid;
         }
 
-        // Se wave 2 chegou após saudação proativa da wave 1, ignora para não duplicar
-        if (lidGreeted.has(phone)) {
-          lidGreeted.delete(phone);
-          console.log(`[WAVE2_SKIP] saudação já enviada para ${phone}, ignorando wave 2`);
-          continue;
-        }
 
         const m = msg.message;
         const text =
@@ -173,20 +166,16 @@ async function handleMessage(sock, phone, text, sendJid = phone) {
   await sock.sendPresenceUpdate('paused', sendJid);
 
   if (cleanResponse) {
-    try {
-      const sent = await sock.sendMessage(sendJid, { text: cleanResponse });
-      console.log(`[SEND_OK] id=${sent?.key?.id} status=${sent?.status} to=${sendJid}`);
-    } catch (e) {
-      console.error(`[SEND_ERR] ${e.message} | jid=${sendJid}`);
-      // Tenta fallback com @s.whatsapp.net se o @lid falhou
-      const fallback = phoneLidCache.has(phone) ? phone : null;
-      if (fallback && sendJid !== fallback) {
-        try {
-          const sent2 = await sock.sendMessage(fallback, { text: cleanResponse });
-          console.log(`[SEND_FALLBACK_OK] id=${sent2?.key?.id} to=${fallback}`);
-        } catch (e2) {
-          console.error(`[SEND_FALLBACK_ERR] ${e2.message}`);
-        }
+    // Tenta enviar para @lid e para @s.whatsapp.net — um deles vai chegar
+    const jidsToTry = [sendJid];
+    if (sendJid !== phone && !jidsToTry.includes(phone)) jidsToTry.push(phone);
+
+    for (const jid of jidsToTry) {
+      try {
+        const sent = await sock.sendMessage(jid, { text: cleanResponse });
+        console.log(`[SEND_OK] jid=${jid} id=${sent?.key?.id}`);
+      } catch (e) {
+        console.error(`[SEND_ERR] jid=${jid} err=${e.message}`);
       }
     }
   }
