@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ["git", "python3", "gnumake", "gcc"]
+nixPkgs = ["nodejs_20", "git", "python3", "gnumake", "gcc"]
 
 [phases.install]
-cmds = ["npm install --legacy-peer-deps"]
+cmds = [
+  "git config --global url.'https://'.insteadOf git://",
+  "npm install --legacy-peer-deps"
+]
 
 [start]
 cmd = "node src/index.js"
